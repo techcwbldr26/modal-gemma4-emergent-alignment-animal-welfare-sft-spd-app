@@ -22,7 +22,7 @@ serve_image = (
 
 
 @app.function(
-    image=serve_image,
+    image=serve_image.add_local_python_source("common"),
     gpu="A100-80GB",
     volumes={"/vol/runs": runs_vol},
     scaledown_window=15 * MINUTES,
