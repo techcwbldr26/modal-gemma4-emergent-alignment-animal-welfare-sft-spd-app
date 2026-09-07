@@ -8,26 +8,53 @@ gates pass. "Freeze" tasks are hard ordering constraints.
 
 ## Phase 0 — Access & scaffolding (day 1 · ~$0–1)
 
-- [ ] **T0.1** Accept the Gemma license on HF for `google/gemma-4-E2B-it` and
+- [x] **T0.1** Accept the Gemma license on HF for `google/gemma-4-E2B-it` and
       `google/gemma-4-E4B-it`; store the HF token as a Modal Secret `hf-token`.
       *Gate: `huggingface_hub.hf_hub_download` of the E2B config.json succeeds in a Modal function.*
+      ✅ DONE 2026-09-07 — gated access verified for BOTH E2B-it and E4B-it
+      (license already accepted on this account); `huggingface-token` secret present.
+- [x] **T0.5** Add `OLLAMA_API_KEY` (Ollama Cloud) to `.env` + create Modal
+      secret `ollama-cloud`. *Gate: an Ollama Cloud chat call to
+      `deepseek-v4-flash:cloud` succeeds from a Modal function.*
+      ✅ DONE 2026-09-07 — secret `ollama-cloud` created; `ollama_check.py`
+      gate passed from inside Modal for BOTH models (direct-API ids:
+      `glm-5.3-flash`, `deepseek-v4-flash:0731` — no `:cloud` suffix).
 - [ ] **T0.2** Request access to the gated MANTA dataset
       (`mycelium-ai/manta-benchmark-questions`) — approval is a schedule risk;
       start NOW. *Gate: request submitted; approval tracked in TASKS.*
-- [ ] **T0.3** Scaffold the Modal app in this folder: `common.py` with the
+- [x] **T0.3** Scaffold the Modal app in this folder: `common.py` with the
       training image (uv; torch, transformers, trl, peft, datasets, unsloth,
       vllm) and Volumes `gemma4-hf-cache`, `gemma4-data`, `gemma4-runs`;
       secrets `hf-token`, `teacher-api`, `wandb` (optional).
       *Gate: `uv run --with modal python -c "import common"` passes; `modal app list` clean.*
-- [ ] **T0.4** Sanity run: E2B-it generation inside a Modal function
+      ✅ DONE 2026-09-07 — `common.py` on PR #2 (`feat/phase0-scaffolding`);
+      volumes created via `create_if_missing`; unsloth/vllm deferred to the
+      phases that need them (YAGNI).
+- [x] **T0.4** Sanity run: E2B-it generation inside a Modal function
       (prompt → response) using the canonical Gemma 4 chat template.
       *Gate: coherent completion returned; < $1 spent.*
+      ✅ DONE 2026-09-07 — `SANITY-OK | model=google/gemma-4-E2B-it |
+      gated_fallback=False | gpu=NVIDIA A100-SXM4-80GB`, coherent response via
+      `apply_chat_template`. (First attempt: hand-rolled turn markers → empty
+      output; canonical template fixed it. Also fixed Modal 1.x needing
+      `add_local_python_source` for sibling imports.)
 
 ## Phase 1 — Data pilot & pipeline audit (days 2–5 · ~$20–50)
 
 - [ ] **T1.1** Clone `sentfutures/animal-welfare-data-pipeline`; run the SDF
       pipeline small (`python sdf_pipeline/run.py --config config.yaml`,
       ~200 docs) and DAD (`python dad_pipeline/run.py`, ~100 examples).
+      ⚠️ **BLOCKER FOUND 2026-09-07:** Ollama Cloud enforces a per-request
+      TOTAL budget (input+output) ≈ 40k tokens on the current plan — measured:
+      22.5k in → 14.8k out (natural stop, 37.3k total); 33k in → exactly 6k out
+      (39k total, done_reason=length). The SDF draft stage's constitution-laden
+      system prompt is ~33k tokens, leaving only ~6k for the document.
+      **Fix options:** (a) trim the draft-stage system prompt to the distilled
+      principles CSV (input ~10k → ~29k output budget) — recommended, small
+      patch; (b) upgrade the Ollama plan / ask support whether the cap is
+      tier-dependent; (c) also add `ollama` backend patch to DAD stages.
+      Otherwise the backend works end-to-end: call_claude contract, thinking
+      separation, stop-reason mapping, cost logging all verified.
 - [ ] **T1.2** Audit outputs (Streamlit viewer + manual read): teacher moral-
       voice leakage? format collapse? species/domain/attitude diversity?
       duplicates? *Gate: written audit memo with go/refine decision.*

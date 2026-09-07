@@ -1,0 +1,120 @@
+diff --git a/shared/api.py b/shared/api.py
+index 289cb36..61b2b22 100644
+--- a/shared/api.py
++++ b/shared/api.py
+@@ -58,13 +58,16 @@ _PRICING = {
+     "claude-sonnet-5": (3.00, 15.00),
+     "claude-opus-4-8": (5.00, 25.00),
+     "claude-opus-5": (5.00, 25.00),
++    # Ollama Cloud (per 1M in/out; from the model library pages, 2026-09-07)
++    "glm-5.3-flash": (0.15, 0.50),
++    "deepseek-v4-flash:0731": (0.22, 0.66),
+     "claude-fable-5": (10.00, 50.00),
+     "claude-haiku-4-5": (1.00, 5.00),
+     "claude-haiku-4-5-20251001": (1.00, 5.00),
+ }
+ _UNPRICED_WARNED: set = set()
+ 
+-_BACKENDS = ("api", "claude_code", "auto")
++_BACKENDS = ("api", "claude_code", "auto", "ollama")
+ 
+ # auto backend: why the subscription path is currently out of play (None =
+ # still in play). Set once per run, loudly — after a demotion every remaining
+@@ -141,6 +144,9 @@ def init(config_path: str = "config.yaml", cost_log_path: str | Path | None = No
+     # calls (the DAD baseline arm) that claude_code cannot reproduce exactly.
+     if _backend in ("api", "auto") and not os.environ.get("ANTHROPIC_API_KEY"):
+         raise KeyError("ANTHROPIC_API_KEY")
++    # ollama backend (open-source-only policy): Ollama Cloud via OLLAMA_API_KEY.
++    if _backend == "ollama" and not os.environ.get("OLLAMA_API_KEY"):
++        raise KeyError("OLLAMA_API_KEY")
+     _client = None  # constructed lazily; the claude_code backend needs no API key
+     _cost_log_path = Path(cost_log_path or _config["outputs"]["cost_log"])
+     _cost_log_path.parent.mkdir(parents=True, exist_ok=True)
+@@ -506,6 +512,72 @@ def _call_claude_code_with_retry(
+     return _run_claude_code_query(model, system, user_message)
+ 
+ 
++def _call_ollama(
++    model: str,
++    system: str,
++    user_message: str,
++    max_tokens: int,
++    temperature: float,
++    return_stop_reason: bool,
++    stage: str | None,
++    item_id: str | None,
++    started: float,
++) -> str | tuple[str, str | None]:
++    """Ollama Cloud backend (https://ollama.com/api/chat) — open-source-only policy.
++
++    Maps the call_claude contract onto Ollama's chat API: system prompt as a
++    system message, thinking disabled (the pipeline's prompts are
++    reasoning-explicit; thinking doubles latency/cost and changes the output
++    contract), num_predict as the max_tokens cap, done_reason mapped to
++    end_turn/max_tokens stop reasons.
++    """
++    import urllib.request
++
++    messages = []
++    if system:
++        messages.append({"role": "system", "content": system})
++    messages.append({"role": "user", "content": user_message})
++    body = json.dumps({
++        "model": model,
++        "messages": messages,
++        "stream": False,
++        # think:true is REQUIRED — with thinking off, Ollama Cloud caps output
++        # at ~6k tokens (verified 2026-09-07: drafts stopped at exactly 6000
++        # twice; with think:true the same call produced 18.5k and finished
++        # naturally). Reasoning lands in message.thinking, which we drop.
++        "think": True,
++        "options": {"temperature": temperature, "num_predict": max_tokens},
++    }).encode()
++    req = urllib.request.Request(
++        "https://ollama.com/api/chat",
++        data=body,
++        headers={
++            "Authorization": "Bearer " + os.environ["OLLAMA_API_KEY"],
++            "Content-Type": "application/json",
++        },
++    )
++    resp = json.loads(urllib.request.urlopen(req, timeout=600).read())
++    text = (resp.get("message", {}).get("content") or "").strip()
++    stop = "max_tokens" if resp.get("done_reason") == "length" else "end_turn"
++    _log_usage(
++        model,
++        resp.get("prompt_eval_count") or 0,
++        resp.get("eval_count") or 0,
++        stage=stage,
++        item_id=item_id,
++        duration_s=time.monotonic() - started,
++        attempts=1,
++        backend="ollama",
++    )
++    if stop != "end_turn":
++        print(
++            f"  WARNING: response stop_reason={stop!r} (model {model}, backend ollama) "
++            "— output may be truncated.",
++            file=sys.stderr,
++        )
++    return (text, stop) if return_stop_reason else text
++
++
+ def call_claude(
+     user_message: str,
+     system_prompt: str = "",
+@@ -559,6 +631,14 @@ def call_claude(
+     _attempt_state.n = 1  # _note_attempt overwrites this on every real attempt
+     started = time.monotonic()
+ 
++    # Ollama Cloud backend (open-source-only policy): serve the call directly
++    # and return before any Anthropic-specific routing.
++    if _backend == "ollama":
++        return _call_ollama(
++            resolved_model, full_system, user_message, resolved_max,
++            resolved_temp, return_stop_reason, stage, item_id, started,
++        )
++
+     # Backend routing. "auto" prefers the subscription (claude_code) and falls
+     # back to the api key when it can't serve the call:
+     #   - empty-system calls (the DAD baseline arm) always go to the api, so the
