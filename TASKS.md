@@ -13,9 +13,12 @@ gates pass. "Freeze" tasks are hard ordering constraints.
       *Gate: `huggingface_hub.hf_hub_download` of the E2B config.json succeeds in a Modal function.*
       ✅ DONE 2026-09-07 — gated access verified for BOTH E2B-it and E4B-it
       (license already accepted on this account); `huggingface-token` secret present.
-- [ ] **T0.5** Add `OLLAMA_API_KEY` (Ollama Cloud) to `.env` + create Modal
+- [x] **T0.5** Add `OLLAMA_API_KEY` (Ollama Cloud) to `.env` + create Modal
       secret `ollama-cloud`. *Gate: an Ollama Cloud chat call to
       `deepseek-v4-flash:cloud` succeeds from a Modal function.*
+      ✅ DONE 2026-09-07 — secret `ollama-cloud` created; `ollama_check.py`
+      gate passed from inside Modal for BOTH models (direct-API ids:
+      `glm-5.3-flash`, `deepseek-v4-flash:0731` — no `:cloud` suffix).
 - [ ] **T0.2** Request access to the gated MANTA dataset
       (`mycelium-ai/manta-benchmark-questions`) — approval is a schedule risk;
       start NOW. *Gate: request submitted; approval tracked in TASKS.*
