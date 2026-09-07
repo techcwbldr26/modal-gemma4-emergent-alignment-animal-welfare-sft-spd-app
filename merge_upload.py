@@ -50,6 +50,21 @@ def merge_and_push(run_id: str, base_model: str, repo_id: str, private_skip: boo
     assert weights, f"no weight files persisted in {merged_dir}"
     assert tokfiles, f"no tokenizer files persisted in {merged_dir}"
 
+    # Gemma 4 E2B/E4B are multimodal: vLLM requires the image processor files
+    # (preprocessor_config.json etc.), which a text-tokenizer save omits.
+    # Copy any processor configs from the base model snapshot.
+    from huggingface_hub import hf_hub_download
+
+    for fname in ("preprocessor_config.json", "processor_config.json"):
+        try:
+            src = hf_hub_download(base, fname)
+            import shutil
+
+            shutil.copy(src, os.path.join(merged_dir, fname))
+            print(f"copied {fname} from base model")
+        except Exception:
+            pass  # base model may not have this processor file
+
     # Optional HF push (needs a token with repo-create/write rights).
     if not private_skip:
         mdl.push_to_hub(repo_id, private=True)
