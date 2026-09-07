@@ -46,7 +46,11 @@ def sanity_generate(model_id: str = "google/gemma-4-E2B-it") -> str:
             used_model, torch_dtype=torch.bfloat16, device_map="cuda"
         )
 
-    inputs = tok(PROMPT, return_tensors="pt").to(model.device)
+    messages = [
+        {"role": "user", "content": "In one sentence, why does animal welfare matter?"},
+    ]
+    prompt = tok.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
+    inputs = tok(prompt, return_tensors="pt").to(model.device)
     out = model.generate(**inputs, max_new_tokens=64, do_sample=False)
     text = tok.decode(out[0][inputs["input_ids"].shape[1]:], skip_special_tokens=True)
 
@@ -56,6 +60,7 @@ def sanity_generate(model_id: str = "google/gemma-4-E2B-it") -> str:
         f"PROMPT: {PROMPT.strip()}\nRESPONSE: {text.strip()}"
     )
     print(result)
+    return result
     return result
 
 
