@@ -122,10 +122,11 @@ def train(
             r=lora_r,
             lora_alpha=lora_r,
             lora_dropout=0.05,
-            # Regex restricted to LANGUAGE layers: targets the plain Linear
-            # inside Gemma4ClippableLinear wrappers (PEFT rejects the wrapper
-            # class) and skips the vision tower.
-            target_modules=r".*language_model\.(model\.)?layers\..*(q_proj|k_proj|v_proj|o_proj|gate_proj|up_proj|down_proj)\.linear$",
+            # In the FULL multimodal model the language attention projections
+            # are plain nn.Linear (verified 2026-09-07 via named_modules on
+            # Modal: model.language_model.layers.N.self_attn.q_proj: Linear).
+            # Scope the regex to language layers so the vision tower is skipped.
+            target_modules=r".*language_model\.layers\..*(q_proj|k_proj|v_proj|o_proj|gate_proj|up_proj|down_proj)$",
             task_type="CAUSAL_LM",
         ),
     )
