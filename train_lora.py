@@ -125,7 +125,7 @@ def train(
             # Regex restricted to LANGUAGE layers: targets the plain Linear
             # inside Gemma4ClippableLinear wrappers (PEFT rejects the wrapper
             # class) and skips the vision tower.
-            target_modules=r".*language_model\.model\.layers\..*(q_proj|k_proj|v_proj|o_proj|gate_proj|up_proj|down_proj)\.linear$",
+            target_modules=r".*language_model\.(model\.)?layers\..*(q_proj|k_proj|v_proj|o_proj|gate_proj|up_proj|down_proj)\.linear$",
             task_type="CAUSAL_LM",
         ),
     )
