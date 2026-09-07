@@ -44,6 +44,17 @@ gates pass. "Freeze" tasks are hard ordering constraints.
 - [ ] **T1.1** Clone `sentfutures/animal-welfare-data-pipeline`; run the SDF
       pipeline small (`python sdf_pipeline/run.py --config config.yaml`,
       ~200 docs) and DAD (`python dad_pipeline/run.py`, ~100 examples).
+      ⚠️ **BLOCKER FOUND 2026-09-07:** Ollama Cloud enforces a per-request
+      TOTAL budget (input+output) ≈ 40k tokens on the current plan — measured:
+      22.5k in → 14.8k out (natural stop, 37.3k total); 33k in → exactly 6k out
+      (39k total, done_reason=length). The SDF draft stage's constitution-laden
+      system prompt is ~33k tokens, leaving only ~6k for the document.
+      **Fix options:** (a) trim the draft-stage system prompt to the distilled
+      principles CSV (input ~10k → ~29k output budget) — recommended, small
+      patch; (b) upgrade the Ollama plan / ask support whether the cap is
+      tier-dependent; (c) also add `ollama` backend patch to DAD stages.
+      Otherwise the backend works end-to-end: call_claude contract, thinking
+      separation, stop-reason mapping, cost logging all verified.
 - [ ] **T1.2** Audit outputs (Streamlit viewer + manual read): teacher moral-
       voice leakage? format collapse? species/domain/attitude diversity?
       duplicates? *Gate: written audit memo with go/refine decision.*
