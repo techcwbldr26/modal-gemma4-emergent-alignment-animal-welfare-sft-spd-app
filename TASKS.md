@@ -11,6 +11,9 @@ gates pass. "Freeze" tasks are hard ordering constraints.
 - [ ] **T0.1** Accept the Gemma license on HF for `google/gemma-4-E2B-it` and
       `google/gemma-4-E4B-it`; store the HF token as a Modal Secret `hf-token`.
       *Gate: `huggingface_hub.hf_hub_download` of the E2B config.json succeeds in a Modal function.*
+- [ ] **T0.5** Add `OLLAMA_API_KEY` (Ollama Cloud) to `.env` + create Modal
+      secret `ollama-cloud`. *Gate: an Ollama Cloud chat call to
+      `deepseek-v4-flash:cloud` succeeds from a Modal function.*
 - [ ] **T0.2** Request access to the gated MANTA dataset
       (`mycelium-ai/manta-benchmark-questions`) — approval is a schedule risk;
       start NOW. *Gate: request submitted; approval tracked in TASKS.*

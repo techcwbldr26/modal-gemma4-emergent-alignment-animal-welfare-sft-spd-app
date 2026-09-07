@@ -19,7 +19,7 @@ PROMPT = "<start_of_turn>user\nIn one sentence, why does animal welfare matter?\
 
 
 @app.function(
-    image=train_image,
+    image=train_image.add_local_python_source("common"),
     gpu=GPU_TRAIN,
     volumes={"/vol/hf": hf_cache_vol},
     secrets=[hf_secret],

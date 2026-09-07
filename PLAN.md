@@ -44,6 +44,7 @@ degradation**? This tests the hopeful inverse of Emergent Misalignment
 | Data pipeline sentfutures/animal-welfare-data-pipeline (Apache-2.0): **SDF corpus** (pretraining-style docs) + **DAD corpus** (difficult-advice chat), both grounded in a constitution; entry points `python sdf_pipeline/run.py --config config.yaml` / `python dad_pipeline/run.py`; per-API-call checkpointing, cost logs, Streamlit viewer; example data: sentientfutures/animal-welfare-training-claude | repo README (live) |
 | MANTA (upstream Mycelium-tools/manta_benchmark@1100a0f): 1,088 scripted 5-turn conversations; **AWVS** + **AWMS**; judge claude-sonnet-4-6 (gpt-5.4 for Claude-family targets); gated dataset mycelium-ai/manta-benchmark-questions; canary GUID; `uv run inspect eval src/manta/manta_eval.py@manta_5turn --model ...` | inspect_evals MANTA page |
 | Modal: serverless GPU functions + Volumes (HF cache/data/checkpoints); official Unsloth finetune example; **A100-80GB $2.50/hr, H200 SXM $4.54/hr** (141 GB, 4.8 TB/s; `gpu="H100"` auto-upgrades to H200 free); L4/A10G cheaper but 24 GB is memory-tight for E4B; `.map()` fan-out; class-based apps (Modal 1.5.x) | modal.com docs/guide/gpu (live) |
+| **Ollama Cloud (teacher/judge — open-source-only policy):** direct API `https://ollama.com/api/chat` with `Authorization: Bearer $OLLAMA_API_KEY`; Python `ollama.Client(host="https://ollama.com", headers={"Authorization": "Bearer " + key})`; models list at `https://ollama.com/api/tags`. **glm-5.3-flash:cloud** = 320B MoE / 18B active, 1M ctx, tunable thinking, MIT, $0.15/$0.50 per 1M in/out. **deepseek-v4-flash:cloud** = 284B MoE / 13B active, 1M ctx, 3 thinking modes, $0.22/$0.66 per 1M in/out | docs.ollama.com/cloud + model library pages (live) |
 
 ---
 
@@ -104,7 +105,10 @@ multi-constitution comparisons.
    (species/domain/attitude spread), duplicates. Decide use-vs-refine.
 3. **Scale generation on Modal:** wrap the pipeline's per-example generation
    in a Modal `.map()` fan-out (checkpointing + per-call cost logs already
-   exist). Teacher: a frontier model via API keys in Modal Secrets.
+   exist). **Teacher models (open-source-only policy): Ollama Cloud —
+   `glm-5.3-flash:cloud` and/or `deepseek-v4-flash:cloud`** via
+   `https://ollama.com/api/chat` with `OLLAMA_API_KEY` in a Modal secret.
+   No Anthropic/OpenAI APIs anywhere in the pipeline.
 4. **Verification/filter stage** (the "Combining SFT and SDF" doc's automated
    verification): dedup (content-keyed IDs already exist), judge-scored
    quality gate, constitution-adherence rubric, length/format checks; publish
@@ -161,9 +165,14 @@ multi-constitution comparisons.
   human-compassion OOD probe set** (~50 scenarios, human-written, frozen
   BEFORE training starts).
 - **Capability:** MMLU (inspect_evals); HLE-lite subset if budget allows.
-- **Judge reliability:** fixed judge (claude-sonnet-4-6; gpt-5.4 cross-check
-  on a 10% sample); report judge–human agreement on a 50-item audited
-  subsample; blind the judge to which arm produced each sample.
+- **Judge reliability (open-source-only policy):** fixed judge =
+  **`deepseek-v4-flash:cloud`** (thinking mode) via Ollama Cloud, cross-checked
+  by **`glm-5.3-flash:cloud`** on a 10% sample; report judge–human agreement on
+  a 50-item audited subsample; blind the judge to which arm produced each
+  sample. **Documented deviation:** official MANTA runs used claude-sonnet-4-6
+  (gpt-5.4 for Claude-family targets); our open-source judge means raw AWVS
+  numbers are not directly comparable to the published May 2026 table — all
+  arm-vs-arm comparisons are internal, which is what the science needs.
 - **Confound check:** stylometric similarity between arm outputs and the base
   model (does arm D just talk like the teacher?).
 

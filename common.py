@@ -22,9 +22,13 @@ runs_vol = modal.Volume.from_name("gemma4-runs", create_if_missing=True)
 
 # --- Secrets -------------------------------------------------------------
 # Reuses the workspace's existing HF secret (same token used for MiniMax-H3).
-# NOTE: gated Gemma 4 also requires accepting Google's license on the HF
-# model page for this token's account (TASKS.md T0.1).
+# NOTE: gated Gemma 4 access verified 2026-09-07 for both E2B-it and E4B-it.
 hf_secret = modal.Secret.from_name("huggingface-token")
+
+# Ollama Cloud (teacher/judge models — open-source-only policy):
+#   glm-5.3-flash:cloud + deepseek-v4-flash:cloud via https://ollama.com/api
+# Created when the user provides OLLAMA_API_KEY (TASKS.md T0.5):
+# ollama_secret = modal.Secret.from_name("ollama-cloud")
 
 # --- Image ---------------------------------------------------------------
 # Pinned loosely; unsloth left out until the LoRA arm needs it (Phase 3).
