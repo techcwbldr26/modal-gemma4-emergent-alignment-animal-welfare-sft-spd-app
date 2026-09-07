@@ -12,8 +12,8 @@ sdf:
   min_score_threshold: 7
   near_dup_threshold: 0.9
   compact_constitution: true
-  draft_max_tokens: 12000
-  rewrite_max_tokens: 12000
+  draft_max_tokens: 16000
+  rewrite_max_tokens: 24000
 dad:
   scenario_model: deepseek-v4-flash:0731
   scenario_refusal_fallback_model: glm-5.3-flash
