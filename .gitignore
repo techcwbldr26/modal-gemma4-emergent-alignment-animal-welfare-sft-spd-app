@@ -1,0 +1,10 @@
+# Internal briefs — kept out of the public repo (contain application text + contacts).
+# Remove these two lines if you want them archived here.
+*.docx
+
+# Python / Modal artifacts
+__pycache__/
+.venv/
+outputs/
+*.log
+.env
