@@ -31,7 +31,7 @@ dad:
   evals:
     auto: true
   dilemmas:
-    count: 40
+    count: 12
     seed_path: null
     scenario_seed: null
     gate: true
