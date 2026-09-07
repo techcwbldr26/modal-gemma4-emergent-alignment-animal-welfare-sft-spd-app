@@ -41,6 +41,15 @@ def merge_and_push(run_id: str, base_model: str, repo_id: str, private_skip: boo
     mdl.save_pretrained(merged_dir)
     tok.save_pretrained(merged_dir)
 
+    # VERIFY the volume actually persisted weights + tokenizer (large-file
+    # uploads have been observed to silently drop on function exit).
+    import glob as _glob
+
+    weights = _glob.glob(os.path.join(merged_dir, "*.safetensors"))
+    tokfiles = _glob.glob(os.path.join(merged_dir, "tokenizer*"))
+    assert weights, f"no weight files persisted in {merged_dir}"
+    assert tokfiles, f"no tokenizer files persisted in {merged_dir}"
+
     # Optional HF push (needs a token with repo-create/write rights).
     if not private_skip:
         mdl.push_to_hub(repo_id, private=True)
