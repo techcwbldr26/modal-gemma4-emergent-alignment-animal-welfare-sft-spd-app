@@ -3,14 +3,17 @@
 Loads the merged model from the gemma4-runs volume (no HF push needed).
 
 Run:
-    modal serve serve_arm.py --model-path /vol/runs/runs/smoke-s0/merged
-Then:  curl <printed-url>/v1/models   (model name = the path)
+    modal serve serve_arm.py
+Then:  curl <printed-url>/v1/models   (model name = the volume path)
 """
 import subprocess
 
 import modal
 
-from common import MINUTES, runs_vol
+from common import MINUTES, app, runs_vol
+
+# Edit per arm — web_server functions can't take parameters (Modal rule).
+MODEL_PATH = "/vol/runs/runs/smoke-s0/merged"
 
 serve_image = (
     modal.Image.debian_slim(python_version="3.12")
@@ -27,9 +30,9 @@ serve_image = (
 )
 @modal.concurrent(max_inputs=8)
 @modal.web_server(port=8000, startup_timeout=15 * MINUTES)
-def serve(model_path: str = "/vol/runs/runs/smoke-s0/merged"):
+def serve():
     subprocess.Popen(
-        f"vllm serve {model_path} --port 8000 --max-model-len 8192 "
+        f"vllm serve {MODEL_PATH} --port 8000 --max-model-len 8192 "
         "--gpu-memory-utilization 0.92",
         shell=True,
     )
