@@ -100,7 +100,7 @@ def train(
         gradient_accumulation_steps=grad_accum,
         learning_rate=lr,
         lr_scheduler_type="cosine",
-        warmup_ratio=0.03,
+        warmup_steps=10,
         num_train_epochs=epochs if max_steps == 0 else 1,
         max_steps=max_steps or -1,
         bf16=True,
