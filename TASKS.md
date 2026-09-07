@@ -75,7 +75,19 @@ gates pass. "Freeze" tasks are hard ordering constraints.
       *Gate: decode a masked batch — loss tokens are assistant-only.*
 - [ ] **T3.3** Measure cost per 1k steps (E4B-it LoRA on **A100-80GB**);
       extrapolate the full matrix; adjust batch/accum if needed.
-- [ ] **T3.4** `merge_upload.py` (LoRA → bf16, push private HF repo per arm/seed)
+- [ ] **T3.4** serve_arm.py — vLLM serving validation (T3.2-adjacent).
+      🔍 **DIAGNOSED 2026-09-07 (root cause, fix queued):** the merge saved
+      `model.safetensors` via `AutoModelForCausalLM` (text-only
+      `Gemma4ForCausalLM`), so keys are `model.layers.N.*` — but vLLM loads
+      Gemma 4 as the FULL multimodal `Gemma4ForConditionalGeneration` and
+      expects `language_model.model.layers.N.*` (+ vision tower + per-layer
+      `k_norm` weights). Result: 20 `k_norm.weight` keys "missing" at vLLM
+      load. **Fix (queued):** in `merge_upload.py`, load the base with
+      `AutoModelForImageTextToText` (full multimodal class) instead of
+      `AutoModelForCausalLM` before merging; then the saved keys match vLLM.
+      Chain of fixes already landed: processor_config.json fetch at serve
+      startup, volume-persistence verification, add_local_python_source,
+      web_server no-params rule, merge-to-volume instead of HF push.
       and `serve_arm.py` (vLLM `@app.cls`, OpenAI-compatible).
       *Gate: served arm answers a chat request through the endpoint.*
 
