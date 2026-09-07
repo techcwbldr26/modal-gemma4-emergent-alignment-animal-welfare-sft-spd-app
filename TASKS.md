@@ -8,23 +8,33 @@ gates pass. "Freeze" tasks are hard ordering constraints.
 
 ## Phase 0 — Access & scaffolding (day 1 · ~$0–1)
 
-- [ ] **T0.1** Accept the Gemma license on HF for `google/gemma-4-E2B-it` and
+- [x] **T0.1** Accept the Gemma license on HF for `google/gemma-4-E2B-it` and
       `google/gemma-4-E4B-it`; store the HF token as a Modal Secret `hf-token`.
       *Gate: `huggingface_hub.hf_hub_download` of the E2B config.json succeeds in a Modal function.*
+      ✅ DONE 2026-09-07 — gated access verified for BOTH E2B-it and E4B-it
+      (license already accepted on this account); `huggingface-token` secret present.
 - [ ] **T0.5** Add `OLLAMA_API_KEY` (Ollama Cloud) to `.env` + create Modal
       secret `ollama-cloud`. *Gate: an Ollama Cloud chat call to
       `deepseek-v4-flash:cloud` succeeds from a Modal function.*
 - [ ] **T0.2** Request access to the gated MANTA dataset
       (`mycelium-ai/manta-benchmark-questions`) — approval is a schedule risk;
       start NOW. *Gate: request submitted; approval tracked in TASKS.*
-- [ ] **T0.3** Scaffold the Modal app in this folder: `common.py` with the
+- [x] **T0.3** Scaffold the Modal app in this folder: `common.py` with the
       training image (uv; torch, transformers, trl, peft, datasets, unsloth,
       vllm) and Volumes `gemma4-hf-cache`, `gemma4-data`, `gemma4-runs`;
       secrets `hf-token`, `teacher-api`, `wandb` (optional).
       *Gate: `uv run --with modal python -c "import common"` passes; `modal app list` clean.*
-- [ ] **T0.4** Sanity run: E2B-it generation inside a Modal function
+      ✅ DONE 2026-09-07 — `common.py` on PR #2 (`feat/phase0-scaffolding`);
+      volumes created via `create_if_missing`; unsloth/vllm deferred to the
+      phases that need them (YAGNI).
+- [x] **T0.4** Sanity run: E2B-it generation inside a Modal function
       (prompt → response) using the canonical Gemma 4 chat template.
       *Gate: coherent completion returned; < $1 spent.*
+      ✅ DONE 2026-09-07 — `SANITY-OK | model=google/gemma-4-E2B-it |
+      gated_fallback=False | gpu=NVIDIA A100-SXM4-80GB`, coherent response via
+      `apply_chat_template`. (First attempt: hand-rolled turn markers → empty
+      output; canonical template fixed it. Also fixed Modal 1.x needing
+      `add_local_python_source` for sibling imports.)
 
 ## Phase 1 — Data pilot & pipeline audit (days 2–5 · ~$20–50)
 
