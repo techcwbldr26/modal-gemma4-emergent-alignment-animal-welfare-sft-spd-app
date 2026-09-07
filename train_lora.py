@@ -48,7 +48,7 @@ def train(
     import torch
     from datasets import Dataset
     from peft import LoraConfig
-    from transformers import AutoModelForCausalLM, AutoTokenizer
+    from transformers import AutoModelForImageTextToText, AutoTokenizer
     from trl import SFTConfig, SFTTrainer
 
     random.seed(seed)
@@ -84,7 +84,9 @@ def train(
     # --- Model + LoRA ------------------------------------------------------
     tok = AutoTokenizer.from_pretrained(model)
     tok.pad_token = tok.pad_token or tok.eos_token
-    mdl = AutoModelForCausalLM.from_pretrained(
+    # FULL multimodal class — keeps checkpoint keys aligned with vLLM's
+    # Gemma4ForConditionalGeneration loader (see TASKS.md T3.4).
+    mdl = AutoModelForImageTextToText.from_pretrained(
         model, torch_dtype=torch.bfloat16, attn_implementation="eager"
     )
 
@@ -120,10 +122,10 @@ def train(
             r=lora_r,
             lora_alpha=lora_r,
             lora_dropout=0.05,
-            target_modules=[
-                "q_proj", "k_proj", "v_proj", "o_proj",
-                "gate_proj", "up_proj", "down_proj",
-            ],
+            # Regex restricted to LANGUAGE layers: targets the plain Linear
+            # inside Gemma4ClippableLinear wrappers (PEFT rejects the wrapper
+            # class) and skips the vision tower.
+            target_modules=r".*language_model\.model\.layers\..*(q_proj|k_proj|v_proj|o_proj|gate_proj|up_proj|down_proj)\.linear$",
             task_type="CAUSAL_LM",
         ),
     )

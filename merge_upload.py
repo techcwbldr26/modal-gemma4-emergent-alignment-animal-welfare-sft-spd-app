@@ -27,7 +27,13 @@ def merge_and_push(run_id: str, base_model: str, repo_id: str, private_skip: boo
     manifest = json.load(open(f"/vol/runs/runs/{run_id}/run_manifest.json"))
     base = manifest.get("model", base_model)
 
-    mdl = AutoModelForCausalLM.from_pretrained(
+    # FULL multimodal class: saving via AutoModelForCausalLM produced
+    # text-only keys (model.layers.*) while vLLM loads Gemma 4 as
+    # Gemma4ForConditionalGeneration expecting language_model.model.layers.*
+    # (+ vision tower + k_norm). See TASKS.md T3.4.
+    from transformers import AutoModelForImageTextToText
+
+    mdl = AutoModelForImageTextToText.from_pretrained(
         base, torch_dtype=torch.bfloat16, device_map="cuda"
     )
     mdl = PeftModel.from_pretrained(mdl, adapter_dir)
