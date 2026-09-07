@@ -11,6 +11,9 @@ sdf:
   entity_pool_seed: 137
   min_score_threshold: 7
   near_dup_threshold: 0.9
+  compact_constitution: true
+  draft_max_tokens: 32000
+  rewrite_max_tokens: 32000
 dad:
   scenario_model: deepseek-v4-flash:0731
   scenario_refusal_fallback_model: glm-5.3-flash
@@ -28,7 +31,7 @@ dad:
   evals:
     auto: true
   dilemmas:
-    count: 40
+    count: 12
     seed_path: null
     scenario_seed: null
     gate: true
