@@ -1,6 +1,6 @@
 backend: ollama
 model: glm-5.3-flash
-max_tokens: 16000
+max_tokens: 32000
 temperature: 1.0
 workers: 2
 evals:
