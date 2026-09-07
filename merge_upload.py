@@ -16,7 +16,7 @@ from common import GPU_TRAIN, app, hf_cache_vol, hf_secret, runs_vol, train_imag
     secrets=[hf_secret],
     timeout=60 * 60,
 )
-def merge_and_push(run_id: str, base_model: str, repo_id: str, private: bool = True) -> str:
+def merge_and_push(run_id: str, base_model: str, repo_id: str, private_skip: bool = True) -> str:
     import json
     import os
     import torch
@@ -34,9 +34,19 @@ def merge_and_push(run_id: str, base_model: str, repo_id: str, private: bool = T
     mdl = mdl.merge_and_unload()
 
     tok = AutoTokenizer.from_pretrained(base)
-    mdl.push_to_hub(repo_id, private=private)
-    tok.push_to_hub(repo_id, private=private)
-    out = f"MERGE-OK | {run_id} -> {repo_id} (base={base})"
+
+    # Always save the merged model to the runs volume (serve_arm.py loads it
+    # from here — no HF permissions needed).
+    merged_dir = f"/vol/runs/runs/{run_id}/merged"
+    mdl.save_pretrained(merged_dir)
+    tok.save_pretrained(merged_dir)
+
+    # Optional HF push (needs a token with repo-create/write rights).
+    if not private_skip:
+        mdl.push_to_hub(repo_id, private=True)
+        tok.push_to_hub(repo_id, private=True)
+
+    out = f"MERGE-OK | {run_id} -> {merged_dir} (base={base}, hf_push={'skipped' if private_skip else repo_id})"
     print(out)
     return out
 
