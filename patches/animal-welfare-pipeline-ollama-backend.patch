@@ -1,5 +1,5 @@
 diff --git a/shared/api.py b/shared/api.py
-index 289cb36..690e258 100644
+index 289cb36..61b2b22 100644
 --- a/shared/api.py
 +++ b/shared/api.py
 @@ -58,13 +58,16 @@ _PRICING = {
@@ -30,7 +30,7 @@ index 289cb36..690e258 100644
      _client = None  # constructed lazily; the claude_code backend needs no API key
      _cost_log_path = Path(cost_log_path or _config["outputs"]["cost_log"])
      _cost_log_path.parent.mkdir(parents=True, exist_ok=True)
-@@ -506,6 +512,70 @@ def _call_claude_code_with_retry(
+@@ -506,6 +512,72 @@ def _call_claude_code_with_retry(
      return _run_claude_code_query(model, system, user_message)
  
  
@@ -63,9 +63,11 @@ index 289cb36..690e258 100644
 +        "model": model,
 +        "messages": messages,
 +        "stream": False,
-+        # NOTE: do NOT send think:false — glm-5.3-flash has reasoning always on,
-+        # and forcing think:false makes it emit reasoning INTO the content field.
-+        # Default behavior separates reasoning into message.thinking (dropped).
++        # think:true is REQUIRED — with thinking off, Ollama Cloud caps output
++        # at ~6k tokens (verified 2026-09-07: drafts stopped at exactly 6000
++        # twice; with think:true the same call produced 18.5k and finished
++        # naturally). Reasoning lands in message.thinking, which we drop.
++        "think": True,
 +        "options": {"temperature": temperature, "num_predict": max_tokens},
 +    }).encode()
 +    req = urllib.request.Request(
@@ -101,7 +103,7 @@ index 289cb36..690e258 100644
  def call_claude(
      user_message: str,
      system_prompt: str = "",
-@@ -559,6 +629,14 @@ def call_claude(
+@@ -559,6 +631,14 @@ def call_claude(
      _attempt_state.n = 1  # _note_attempt overwrites this on every real attempt
      started = time.monotonic()
  
