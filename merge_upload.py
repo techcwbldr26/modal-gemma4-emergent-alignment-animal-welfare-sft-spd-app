@@ -56,6 +56,29 @@ def merge_and_push(run_id: str, base_model: str, repo_id: str, private_skip: boo
     assert weights, f"no weight files persisted in {merged_dir}"
     assert tokfiles, f"no tokenizer files persisted in {merged_dir}"
 
+    # PATCH: save_pretrained drops the per-layer k_norm/q_norm tensors
+    # (transformers/vLLM Gemma 4 layout mismatch — TASKS.md T3.4). Copy any
+    # missing tensors straight from the base checkpoint file on the volume.
+    from safetensors.torch import load_file, safe_open, save_file
+
+    merged_file = os.path.join(merged_dir, "model.safetensors")
+    if os.path.exists(merged_file):
+        base_candidates = sorted(
+            _glob.glob("/vol/hf/hub/models--*E2B-it*/snapshots/*/model.safetensors")
+        )
+        if base_candidates:
+            merged_tensors = load_file(merged_file)
+            with safe_open(base_candidates[0], framework="pt") as bf:
+                missing = [k for k in bf.keys() if k not in merged_tensors]
+                for k in missing:
+                    merged_tensors[k] = bf.get_tensor(k)
+            if missing:
+                save_file(merged_tensors, merged_file, metadata={"format": "pt"})
+                print(f"PATCHED {len(missing)} dropped tensors from base checkpoint "
+                      f"(e.g. {missing[:2]})")
+            else:
+                print("no dropped tensors — merged checkpoint complete")
+
     # Gemma 4 E2B/E4B are multimodal: vLLM requires the image processor files
     # (preprocessor_config.json etc.), which a text-tokenizer save omits.
     # Copy any processor configs from the base model snapshot.
