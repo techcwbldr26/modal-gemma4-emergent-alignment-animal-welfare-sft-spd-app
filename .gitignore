@@ -2,6 +2,9 @@
 # Remove these two lines if you want them archived here.
 *.docx
 
+# Local-only media prompts (experiment-internal; not for GitHub or HF)
+media_prompts.md
+
 # Python / Modal artifacts
 __pycache__/
 .venv/
