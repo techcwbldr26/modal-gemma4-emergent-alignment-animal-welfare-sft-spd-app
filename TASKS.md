@@ -75,7 +75,15 @@ gates pass. "Freeze" tasks are hard ordering constraints.
       *Gate: decode a masked batch — loss tokens are assistant-only.*
 - [ ] **T3.3** Measure cost per 1k steps (E4B-it LoRA on **A100-80GB**);
       extrapolate the full matrix; adjust batch/accum if needed.
-- [ ] **T3.4** `merge_upload.py` (LoRA → bf16, push private HF repo per arm/seed)
+- [x] **T3.4** serve_arm.py — vLLM serving validation.
+      ✅ DONE 2026-09-08 — full chain validated: TRAIN-OK (multimodal class +
+      language-scoped LoRA regex) → merge with **k_norm/q_norm tensor patch**
+      (save_pretrained drops 60 tensors incl. k_norm/k_proj; copied back from
+      the base checkpoint) → vLLM on **CUDA devel base** (nvcc needed for JIT)
+      with enforce-eager → `/v1/models` + real chat completion via the merged
+      arm. Gotchas enshrined: web_server fns take no params;
+      add_local_python_source for sibling imports; serve reads the model from
+      the runs volume (HF push optional — token lacks repo-create rights).
       and `serve_arm.py` (vLLM `@app.cls`, OpenAI-compatible).
       *Gate: served arm answers a chat request through the endpoint.*
 

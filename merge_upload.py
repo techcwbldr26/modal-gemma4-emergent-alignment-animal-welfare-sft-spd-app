@@ -27,7 +27,13 @@ def merge_and_push(run_id: str, base_model: str, repo_id: str, private_skip: boo
     manifest = json.load(open(f"/vol/runs/runs/{run_id}/run_manifest.json"))
     base = manifest.get("model", base_model)
 
-    mdl = AutoModelForCausalLM.from_pretrained(
+    # FULL multimodal class: saving via AutoModelForCausalLM produced
+    # text-only keys (model.layers.*) while vLLM loads Gemma 4 as
+    # Gemma4ForConditionalGeneration expecting language_model.model.layers.*
+    # (+ vision tower + k_norm). See TASKS.md T3.4.
+    from transformers import AutoModelForImageTextToText
+
+    mdl = AutoModelForImageTextToText.from_pretrained(
         base, torch_dtype=torch.bfloat16, device_map="cuda"
     )
     mdl = PeftModel.from_pretrained(mdl, adapter_dir)
@@ -40,6 +46,53 @@ def merge_and_push(run_id: str, base_model: str, repo_id: str, private_skip: boo
     merged_dir = f"/vol/runs/runs/{run_id}/merged"
     mdl.save_pretrained(merged_dir)
     tok.save_pretrained(merged_dir)
+
+    # VERIFY the volume actually persisted weights + tokenizer (large-file
+    # uploads have been observed to silently drop on function exit).
+    import glob as _glob
+
+    weights = _glob.glob(os.path.join(merged_dir, "*.safetensors"))
+    tokfiles = _glob.glob(os.path.join(merged_dir, "tokenizer*"))
+    assert weights, f"no weight files persisted in {merged_dir}"
+    assert tokfiles, f"no tokenizer files persisted in {merged_dir}"
+
+    # PATCH: save_pretrained drops the per-layer k_norm/q_norm tensors
+    # (transformers/vLLM Gemma 4 layout mismatch — TASKS.md T3.4). Copy any
+    # missing tensors straight from the base checkpoint file on the volume.
+    from safetensors.torch import load_file, safe_open, save_file
+
+    merged_file = os.path.join(merged_dir, "model.safetensors")
+    if os.path.exists(merged_file):
+        base_candidates = sorted(
+            _glob.glob("/vol/hf/hub/models--*E2B-it*/snapshots/*/model.safetensors")
+        )
+        if base_candidates:
+            merged_tensors = load_file(merged_file)
+            with safe_open(base_candidates[0], framework="pt") as bf:
+                missing = [k for k in bf.keys() if k not in merged_tensors]
+                for k in missing:
+                    merged_tensors[k] = bf.get_tensor(k)
+            if missing:
+                save_file(merged_tensors, merged_file, metadata={"format": "pt"})
+                print(f"PATCHED {len(missing)} dropped tensors from base checkpoint "
+                      f"(e.g. {missing[:2]})")
+            else:
+                print("no dropped tensors — merged checkpoint complete")
+
+    # Gemma 4 E2B/E4B are multimodal: vLLM requires the image processor files
+    # (preprocessor_config.json etc.), which a text-tokenizer save omits.
+    # Copy any processor configs from the base model snapshot.
+    from huggingface_hub import hf_hub_download
+
+    for fname in ("preprocessor_config.json", "processor_config.json"):
+        try:
+            src = hf_hub_download(base, fname)
+            import shutil
+
+            shutil.copy(src, os.path.join(merged_dir, fname))
+            print(f"copied {fname} from base model")
+        except Exception:
+            pass  # base model may not have this processor file
 
     # Optional HF push (needs a token with repo-create/write rights).
     if not private_skip:

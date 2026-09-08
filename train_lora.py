@@ -48,7 +48,7 @@ def train(
     import torch
     from datasets import Dataset
     from peft import LoraConfig
-    from transformers import AutoModelForCausalLM, AutoTokenizer
+    from transformers import AutoModelForImageTextToText, AutoTokenizer
     from trl import SFTConfig, SFTTrainer
 
     random.seed(seed)
@@ -84,7 +84,9 @@ def train(
     # --- Model + LoRA ------------------------------------------------------
     tok = AutoTokenizer.from_pretrained(model)
     tok.pad_token = tok.pad_token or tok.eos_token
-    mdl = AutoModelForCausalLM.from_pretrained(
+    # FULL multimodal class — keeps checkpoint keys aligned with vLLM's
+    # Gemma4ForConditionalGeneration loader (see TASKS.md T3.4).
+    mdl = AutoModelForImageTextToText.from_pretrained(
         model, torch_dtype=torch.bfloat16, attn_implementation="eager"
     )
 
@@ -98,7 +100,7 @@ def train(
         gradient_accumulation_steps=grad_accum,
         learning_rate=lr,
         lr_scheduler_type="cosine",
-        warmup_ratio=0.03,
+        warmup_steps=10,
         num_train_epochs=epochs if max_steps == 0 else 1,
         max_steps=max_steps or -1,
         bf16=True,
@@ -120,10 +122,11 @@ def train(
             r=lora_r,
             lora_alpha=lora_r,
             lora_dropout=0.05,
-            target_modules=[
-                "q_proj", "k_proj", "v_proj", "o_proj",
-                "gate_proj", "up_proj", "down_proj",
-            ],
+            # In the FULL multimodal model the language attention projections
+            # are plain nn.Linear (verified 2026-09-07 via named_modules on
+            # Modal: model.language_model.layers.N.self_attn.q_proj: Linear).
+            # Scope the regex to language layers so the vision tower is skipped.
+            target_modules=r".*language_model\.layers\..*(q_proj|k_proj|v_proj|o_proj|gate_proj|up_proj|down_proj)$",
             task_type="CAUSAL_LM",
         ),
     )
