@@ -30,6 +30,7 @@ from common import GPU_TRAIN, app, data_vol, hf_cache_vol, hf_secret, runs_vol, 
 )
 def train(
     arm: str = "smoke",
+    init_adapter: str = "",        # arm D: continue from an existing adapter on the runs volume
     seed: int = 0,
     model: str = "google/gemma-4-E2B-it",
     dataset: str = "dad",          # dad | sdf
@@ -89,6 +90,12 @@ def train(
     mdl = AutoModelForImageTextToText.from_pretrained(
         model, torch_dtype=torch.bfloat16, attn_implementation="eager"
     )
+    if init_adapter:
+        # Arm D (sequential): continue SDF-pretrained adapter on DAD chat.
+        from peft import PeftModel
+
+        mdl = PeftModel.from_pretrained(mdl, init_adapter)
+        print(f"resumed adapter from {init_adapter}")
 
     run_id = f"{arm}-s{seed}"
     out_dir = f"/vol/runs/runs/{run_id}"
