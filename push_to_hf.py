@@ -6,9 +6,11 @@ REPO = "techcwbldr/modal-hf-gemma4-emergent-alignment-animal-welfare-sft-spd"
 ROOT = Path(__file__).resolve().parent
 
 FILES = [
-    "PLAN.md", "TASKS.md", "AUDIT_MEMO.md", "README.md", ".env.example",
+    "PLAN.md", "TASKS.md", "AUDIT_MEMO.md", "PREREGISTRATION.md", "README.md",
+    ".env.example",
     "common.py", "train_lora.py", "merge_upload.py", "serve_arm.py",
-    "sanity.py", "ollama_check.py", "t32_mask_check.py",
+    "sanity.py", "ollama_check.py", "t32_mask_check.py", "run_matrix.py",
+    "audit_models.py", "diag_modules.py", "check_base_keys.py", "push_to_hf.py",
     "patches/animal-welfare-pipeline-ollama-backend.patch",
     "patches/config.pilot.yaml", "patches/config.phase2.yaml",
 ]
