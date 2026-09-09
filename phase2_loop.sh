@@ -11,7 +11,8 @@ MAX_PASSES=20
 TARGET=200
 
 for i in $(seq 1 $MAX_PASSES); do
-  DRAFTS=$(wc -l < outputs/sdf/runs/*phase2-scale/layer2/drafts.jsonl 2>/dev/null | tr -d ' ' || echo 0)
+  LATEST=$(ls -dt outputs/sdf/runs/*phase2-scale* 2>/dev/null | head -1)
+  DRAFTS=$(find "$LATEST/layer2" -name 'drafts.jsonl' -exec cat {} + 2>/dev/null | wc -l | tr -d ' ')
   echo "=== SDF resume pass $i (drafts: $DRAFTS / $TARGET) ==="
   if [ "${DRAFTS:-0}" -ge "$TARGET" ]; then
     echo "SDF drafts converged at $DRAFTS"
