@@ -13,3 +13,4 @@ outputs/
 .env
 pipeline/
 .evals-venv/
+logs/

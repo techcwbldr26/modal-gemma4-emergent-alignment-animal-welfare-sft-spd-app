@@ -92,6 +92,6 @@ def alignment_probes():
             for p in PROBES
         ],
         solver=[multiple_choice()],
-        scorer="choice",
+        scorer=choice(),
         metadata={"prereg_section": "3.4", "purpose": "OOD human-compassion transfer"},
     )
