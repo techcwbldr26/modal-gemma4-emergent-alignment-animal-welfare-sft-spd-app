@@ -14,6 +14,7 @@ from common import MINUTES, app, runs_vol
 
 # Edit per arm — web_server functions can't take parameters (Modal rule).
 MODEL_PATH = "/vol/runs/runs/smoke-s0/merged"
+ARM_NAME = "smoke-s0"  # short alias Inspect/vLLM clients use
 
 # CUDA devel base: vLLM JIT-compiles kernels at startup and needs nvcc
 # (debian_slim has no CUDA toolkit -> "Could not find nvcc").
@@ -51,6 +52,7 @@ def serve():
 
     subprocess.Popen(
         f"vllm serve {MODEL_PATH} --port 8000 --max-model-len 8192 "
+        f"--served-model-name {ARM_NAME} "
         "--gpu-memory-utilization 0.92 --enforce-eager",
         shell=True,
     )
