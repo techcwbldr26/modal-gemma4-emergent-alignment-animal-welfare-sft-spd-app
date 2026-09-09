@@ -12,3 +12,4 @@ outputs/
 *.log
 .env
 pipeline/
+.evals-venv/
