@@ -75,7 +75,7 @@ def main(model: str = "google/gemma-4-E4B-it", execute: bool = False, plan_only:
         rows = args_rows(wave)
         if wave is wave2:
             for row, p in zip(rows, wave):
-                row[1] = f"/vol/runs/runs/D{p['seed']}-sdf/adapter"
+                row[1] = f"/vol/runs/runs/{p['arm'].replace('-dad', '-sdf')}-s{p['seed']}/adapter"
         if not rows:
             continue
         print(f"launching wave of {len(rows)} runs...")
