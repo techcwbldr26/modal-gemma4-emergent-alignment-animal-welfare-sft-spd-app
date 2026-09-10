@@ -80,9 +80,11 @@ def main(model: str = "google/gemma-4-E4B-it", execute: bool = False, plan_only:
             continue
         print(f"launching wave of {len(rows)} runs...")
         handles = train.starmap(rows)
-        for h in handles:
+        for out in handles:
+            # starmap iteration yields each run's return value (a summary
+            # string) as it completes; container exceptions re-raise here.
             try:
-                results.append(h.get())
+                results.append(out)
             except Exception as e:
                 # One failed run must not cancel its wave-mates (crash-proof app).
                 results.append(f"RUN-FAILED: {type(e).__name__}: {e}")
