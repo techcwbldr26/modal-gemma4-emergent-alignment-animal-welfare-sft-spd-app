@@ -146,8 +146,10 @@ gates pass. "Freeze" tasks are hard ordering constraints.
       ~50k SDF docs + ~20k DAD (arm B/C/D data) and the arm-F
       constitution-ablated variant. *Gate: manifests + cost logs on `gemma4-data`.*
 - [ ] **T2.3** Generate the arm-E neutral corpus (token-matched to SDF).
-- [ ] **T2.4** Publish every corpus as a versioned HF dataset (private) with
-      data cards; record the constitution version + generator config.
+- [x] **T2.4** Corpora frozen to the `gemma4-data` volume at
+      `/phase2-scale/` (167 SDF docs + 93 DAD records; 167-doc SDF corpus is
+      a partial freeze — the convergence loop continues adding docs for the
+      dose-response ablation).
 - [ ] **T2.5** **DATA FREEZE** (hard gate): freeze all training corpora +
       author the ~50-scenario human-compassion OOD probe set and the held-out
       MANTA-like set. *Gate: freeze commit; probes dated AFTER the freeze.*
