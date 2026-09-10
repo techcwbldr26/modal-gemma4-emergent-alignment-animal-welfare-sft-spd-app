@@ -19,7 +19,7 @@ SDF_F = "/vol/data/phase2-scale/sdf_noconstitution_corpus.jsonl"  # arm F
 DAD_F = "/vol/data/phase2-scale/dad_noconstitution_corpus.jsonl"  # arm F
 
 
-def build_plan(model: str) -> list[dict]:
+def build_plan(model: str, skip_ef: bool = False) -> list[dict]:
     """(arm, seed, dataset, data_path, init_adapter, max_steps, note)."""
     plan = []
     for s in (0, 1, 2):
@@ -38,14 +38,16 @@ def build_plan(model: str) -> list[dict]:
     for s in (0, 1):
         plan.append(dict(arm="F-noconstitution", seed=s, dataset="dad", data_path=DAD_F,
                          max_steps=0, note="constitution ablated"))
+    # skip_ef: drop arms E/F when their control corpora aren't generated yet
+    plan = [p for p in plan if not (skip_ef and p["arm"].startswith(("E", "F")))]
     for p in plan:
         p["model"] = model
     return plan
 
 
 @app.local_entrypoint()
-def main(model: str = "google/gemma-4-E4B-it", execute: bool = False, plan_only: bool = False):
-    plan = build_plan(model)
+def main(model: str = "google/gemma-4-E4B-it", execute: bool = False, plan_only: bool = False, skip_ef: bool = False):
+    plan = build_plan(model, skip_ef=skip_ef)
     print(f"{len(plan)} runs planned:")
     for p in plan:
         print(f"  {p['arm']:20s} seed={p['seed']} {p['note']}")
