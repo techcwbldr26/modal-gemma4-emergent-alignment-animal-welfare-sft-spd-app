@@ -105,7 +105,7 @@ def merge_and_push(run_id: str, base_model: str, repo_id: str, private_skip: boo
 
 
 @app.local_entrypoint()
-def main(
+def merge_main(
     run_id: str = "smoke-s0",
     base_model: str = "google/gemma-4-E2B-it",
     repo_id: str = "techcwbldr26/gemma4-emergent-alignment-smoke",

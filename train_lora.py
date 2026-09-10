@@ -159,7 +159,7 @@ def train(
 
 
 @app.local_entrypoint()
-def main(
+def train_main(
     arm: str = "smoke",
     seed: int = 0,
     model: str = "google/gemma-4-E2B-it",
