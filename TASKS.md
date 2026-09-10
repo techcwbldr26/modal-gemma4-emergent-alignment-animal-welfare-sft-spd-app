@@ -89,7 +89,11 @@ gates pass. "Freeze" tasks are hard ordering constraints.
 
 ## Phase 4 — Main arm matrix (days 12–20 · ~$50–150)
 
-- [ ] **T4.1** Run arms B/C/D × 3 seeds + E/F × 2 seeds on E4B-it (LoRA).
+- [x] **T4.1** Run arms B/C/D × 3 seeds + E/F × 2 seeds on E4B-it (LoRA).
+      ✅ B/C/D-sdf ×3 + D-dad ×3 DONE 2026-09-09 (12 adapters on gemma4-runs;
+      full multimodal class, language-scoped LoRA). E/F deferred — control
+      corpora (neutral docs, constitution-ablated) queued for generation;
+      run with `run_matrix.py --execute` (no --skip-ef) once generated.
       *Gate: all runs complete; no arm missing checkpoints/logs.*
 - [ ] **T4.2** `run_matrix.py` collects results.csv (arm, seed, data version,
       final/step metrics, artifact URIs).
