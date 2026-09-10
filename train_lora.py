@@ -92,10 +92,14 @@ def train(
     )
     if init_adapter:
         # Arm D (sequential): continue SDF-pretrained adapter on DAD chat.
+        # Merge+unload so the trainer receives a plain model (TRL rejects
+        # PeftModel + new peft_config); the trainer then attaches a FRESH
+        # LoRA on the value-pretrained weights.
         from peft import PeftModel
 
         mdl = PeftModel.from_pretrained(mdl, init_adapter)
-        print(f"resumed adapter from {init_adapter}")
+        mdl = mdl.merge_and_unload()
+        print(f"merged-and-unloaded adapter from {init_adapter}")
 
     run_id = f"{arm}-s{seed}"
     out_dir = f"/vol/runs/runs/{run_id}"
