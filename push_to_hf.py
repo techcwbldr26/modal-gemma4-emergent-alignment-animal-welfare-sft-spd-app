@@ -13,7 +13,7 @@ FILES = [
     ".env.example",
     "common.py", "train_lora.py", "merge_upload.py", "serve_arm.py",
     "sanity.py", "ollama_check.py", "t32_mask_check.py", "run_matrix.py",
-    "audit_models.py", "diag_modules.py", "check_base_keys.py", "push_to_hf.py",
+    "audit_models.py", "RESULTS.md", "diag_modules.py", "check_base_keys.py", "push_to_hf.py",
     "evals/README.md", "evals/alignment_probes.py",
     "patches/animal-welfare-pipeline-ollama-backend.patch",
     "patches/config.pilot.yaml", "patches/config.phase2.yaml",
