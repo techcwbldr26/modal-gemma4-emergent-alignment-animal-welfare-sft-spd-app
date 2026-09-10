@@ -7,6 +7,8 @@ stages (SDF midtraining -> DAD post-training) via init_adapter chaining.
 Run (dry list):  modal run run_matrix.py --plan-only
 Run (execute):   modal run run_matrix.py --execute --model google/gemma-4-E4B-it
 """
+import sys
+
 import modal
 
 from common import app
@@ -46,8 +48,10 @@ def build_plan(model: str, skip_ef: bool = False) -> list[dict]:
 
 
 @app.local_entrypoint()
-def main(model: str = "google/gemma-4-E4B-it", execute: bool = False, plan_only: bool = False, skip_ef: bool = False):
+def main(model: str = "google/gemma-4-E4B-it", execute: bool = False, plan_only: bool = False, skip_ef: bool = False, wave2_only: bool = False):
     plan = build_plan(model, skip_ef=skip_ef)
+    if wave2_only:
+        plan = [p for p in plan if p["arm"].startswith("D") and p["arm"].endswith("-dad")]
     print(f"{len(plan)} runs planned:")
     for p in plan:
         print(f"  {p['arm']:20s} seed={p['seed']} {p['note']}")
@@ -66,6 +70,7 @@ def main(model: str = "google/gemma-4-E4B-it", execute: bool = False, plan_only:
             for p in wave
         ]
 
+    results = []
     for wave in (wave1, wave2):
         rows = args_rows(wave)
         if wave is wave2:
@@ -76,4 +81,12 @@ def main(model: str = "google/gemma-4-E4B-it", execute: bool = False, plan_only:
         print(f"launching wave of {len(rows)} runs...")
         handles = train.starmap(rows)
         for h in handles:
-            print(h.get())
+            try:
+                results.append(h.get())
+            except Exception as e:
+                # One failed run must not cancel its wave-mates (crash-proof app).
+                results.append(f"RUN-FAILED: {type(e).__name__}: {e}")
+                print(f"RUN-FAILED: {e}", file=sys.stderr)
+    print("=== MATRIX RESULTS ===")
+    for r in results:
+        print(r)
